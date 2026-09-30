@@ -1,0 +1,180 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x200000
+
+ccmram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x10000
+
+ram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x30000
+
+sdram: Memory.MappedMemory @ sysbus 0xD0000000
+    size: 0x200000
+
+flash_alias: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x200000
+
+sram_bitband: Misc.BitBandPeripheral @ sysbus 0x22000000
+    base_address: 0x20000000
+
+tim2: Timers.STM32_Timer @ sysbus 0x40000000
+
+tim3: Timers.STM32_Timer @ sysbus 0x40000400
+
+tim4: Timers.STM32_Timer @ sysbus 0x40000800
+
+tim5: Timers.STM32_Timer @ sysbus 0x40000C00
+
+tim6: Timers.STM32_Timer @ sysbus 0x40001000
+
+tim7: Timers.STM32_Timer @ sysbus 0x40001400
+
+tim12: Timers.STM32_Timer @ sysbus 0x40001800
+
+tim13: Timers.STM32_Timer @ sysbus 0x40001C00
+
+tim14: Timers.STM32_Timer @ sysbus 0x40002000
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
+
+wwdg: Timers.STM32F4_WWDG @ sysbus 0x40002C00
+
+iwdg: Timers.STM32F4_IWDG @ sysbus 0x40003000
+
+spi2: SPI.STM32F4_SPI @ sysbus 0x40003800
+
+spi3: SPI.STM32F4_SPI @ sysbus 0x40003C00
+
+uart2: UART.STM32_UART @ sysbus 0x40004400
+
+usart3: UART.STM32_UART @ sysbus 0x40004800
+
+uart4: UART.STM32_UART @ sysbus 0x40004C00
+
+uart5: UART.STM32_UART @ sysbus 0x40005000
+
+i2c1: I2C.STM32F4_I2C @ sysbus 0x40005400
+
+i2c2: I2C.STM32F4_I2C @ sysbus 0x40005800
+
+i2c3: I2C.STM32F4_I2C @ sysbus 0x40005C00
+
+can1: CAN.STM32F4_CAN @ sysbus 0x40006400
+
+can2: CAN.STM32F4_CAN @ sysbus 0x40006800
+
+pwr: PWR.STM32_PWR @ sysbus 0x40007000
+
+dac: Analog.STM32F4_DAC @ sysbus 0x40007400
+
+uart7: UART.STM32_UART @ sysbus 0x40007800
+
+uart8: UART.STM32_UART @ sysbus 0x40007C00
+
+tim1: Timers.STM32_Timer @ sysbus 0x40010000
+
+tim8: Timers.STM32_Timer @ sysbus 0x40010400
+
+uart1: UART.STM32_UART @ sysbus 0x40011000
+
+usart6: UART.STM32_UART @ sysbus 0x40011400
+
+adc1: ADC.STM32F4_ADC @ sysbus 0x40012000
+    size: 0x100
+
+adc2: ADC.STM32F4_ADC @ sysbus 0x40012100
+    size: 0x100
+
+adc3: ADC.STM32F4_ADC @ sysbus 0x40012200
+    size: 0x100
+
+spi1: SPI.STM32F4_SPI @ sysbus 0x40013000
+
+spi4: SPI.STM32F4_SPI @ sysbus 0x40013400
+
+syscfg: Misc.STM32F4_SYSCFG @ sysbus 0x40013800
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40013C00
+
+tim9: Timers.STM32_Timer @ sysbus 0x40014000
+
+tim10: Timers.STM32_Timer @ sysbus 0x40014400
+
+tim11: Timers.STM32_Timer @ sysbus 0x40014800
+
+spi5: SPI.STM32F4_SPI @ sysbus 0x40015000
+
+spi6: SPI.STM32F4_SPI @ sysbus 0x40015400
+
+ltdc: Video.STM32F4_LTDC @ sysbus 0x40016800
+
+gpioa: GPIO.STM32F4_GPIO @ sysbus 0x40020000
+
+gpiob: GPIO.STM32F4_GPIO @ sysbus 0x40020400
+
+gpioc: GPIO.STM32F4_GPIO @ sysbus 0x40020800
+
+gpiod: GPIO.STM32F4_GPIO @ sysbus 0x40020C00
+
+gpioe: GPIO.STM32F4_GPIO @ sysbus 0x40021000
+
+gpiof: GPIO.STM32F4_GPIO @ sysbus 0x40021400
+
+gpiog: GPIO.STM32F4_GPIO @ sysbus 0x40021800
+
+gpioh: GPIO.STM32F4_GPIO @ sysbus 0x40021C00
+
+gpioi: GPIO.STM32F4_GPIO @ sysbus 0x40022000
+
+gpioj: GPIO.STM32F4_GPIO @ sysbus 0x40022400
+
+gpiok: GPIO.STM32F4_GPIO @ sysbus 0x40022800
+
+crc: Misc.STM32F4_CRC @ sysbus 0x40023000
+
+rcc: RCC.STM32F4_RCC @ sysbus 0x40023800
+
+flash_controller: Memory.STM32_Flash @ sysbus 0x40023C00
+
+dma1: DMA.STM32F4_DMA @ sysbus 0x40026000
+
+dma2: DMA.STM32F4_DMA @ sysbus 0x40026400
+
+dma2d: DMA.STM32F4_DMA2D @ sysbus 0x4002B000
+
+usb_otg_hs: USB.USB_Stub @ sysbus 0x40040000
+
+bitband: Misc.BitBandPeripheral @ sysbus 0x42000000
+    base_address: 0x40000000
+
+usb_otg_fs: USB.USB_Stub @ sysbus 0x50000000
+
+rng: Misc.STM32F4_RNG @ sysbus 0x50060800
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+
+systick: Tims.SysTick @ sysbus 0xE000E010
+
+// EXCLUDED: i2s2ext (I2S2ext) @ 0x40003400 - I2S alternate mode of SPI2; not modeled as a separate peripheral - shares SPI2's own STM32F4_SPI silicon
+// EXCLUDED: i2s3ext (I2S3ext) @ 0x40004000 - I2S alternate mode of SPI3; not modeled as a separate peripheral - shares SPI3's own STM32F4_SPI silicon
+// EXCLUDED: c_adc (C_ADC) @ 0x40012300 - ADC_Common (CSR/CCR/CDR) registers not modeled separately; no registered model - see renoly/hw/st/stm32f4/stm32f4_adc.py
+// EXCLUDED: sdio (SDIO) @ 0x40012C00 - No registered SD/MMC controller model for STM32F429
+// EXCLUDED: sai (SAI) @ 0x40015800 - No registered Serial Audio Interface model for STM32F429
+// EXCLUDED: ethernet_mac (Ethernet_MAC) @ 0x40028000 - No registered Ethernet MAC model for STM32F429
+// EXCLUDED: ethernet_mmc (Ethernet_MMC) @ 0x40028100 - No registered Ethernet MAC model for STM32F429
+// EXCLUDED: ethernet_ptp (Ethernet_PTP) @ 0x40028700 - No registered Ethernet MAC model for STM32F429
+// EXCLUDED: ethernet_dma (Ethernet_DMA) @ 0x40029000 - No registered Ethernet MAC model for STM32F429
+// EXCLUDED: otg_hs_host (OTG_HS_HOST) @ 0x40040400 - USB.USB_Stub only models OTG_HS_GLOBAL's core registers; host sub-block is not modeled
+// EXCLUDED: otg_hs_device (OTG_HS_DEVICE) @ 0x40040800 - USB.USB_Stub only models OTG_HS_GLOBAL's core registers; device sub-block is not modeled
+// EXCLUDED: otg_hs_pwrclk (OTG_HS_PWRCLK) @ 0x40040E00 - USB.USB_Stub only models OTG_HS_GLOBAL's core registers; power/clock sub-block is not modeled
+// EXCLUDED: otg_fs_host (OTG_FS_HOST) @ 0x50000400 - USB.USB_Stub only models OTG_FS_GLOBAL's core registers; host sub-block is not modeled
+// EXCLUDED: otg_fs_device (OTG_FS_DEVICE) @ 0x50000800 - USB.USB_Stub only models OTG_FS_GLOBAL's core registers; device sub-block is not modeled
+// EXCLUDED: otg_fs_pwrclk (OTG_FS_PWRCLK) @ 0x50000E00 - USB.USB_Stub only models OTG_FS_GLOBAL's core registers; power/clock sub-block is not modeled
+// EXCLUDED: dcmi (DCMI) @ 0x50050000 - No registered camera-interface (DCMI) model for STM32F429
+// EXCLUDED: cryp (CRYP) @ 0x50060000 - No registered AES/crypto accelerator model for STM32F429
+// EXCLUDED: hash (HASH) @ 0x50060400 - No registered hash accelerator model for STM32F429
+// EXCLUDED: fmc (FMC) @ 0xA0000000 - No registered FMC/FSMC external-memory-controller model; the external SDRAM window it exposes is declared directly as the plain 'sdram' [[memory]] region above instead
+// EXCLUDED: dbg (DBG) @ 0xE0042000 - DBGMCU/debug registers not modeled - no functional effect on emulated firmware execution without a real debug probe attached

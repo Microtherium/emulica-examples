@@ -1,0 +1,17 @@
+{
+  "target_id": "ti.tm4c123",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "ti.tm4c123",
+    "version": "reviewed-existing-v1",
+    "sha256": "eb211ce30094881d993bb00cb2a0b8fa88089cedc06714ae7b281819f2710b08",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "b253376df5f5278c52233fda328922d2d0ef2d2f8a7766cb7cc7c526e6b40916",
+  "outputs": {
+    "platform.repl": "efdd574bd78b1f27c5192e126f432f64bb751f19aa027ce5ec93f88b5f6c7220",
+    "target.toml": "427e9f8987584675454fdc0c92140921d931e181eac8f74b5b96bb087ef6639f"
+  }
+}

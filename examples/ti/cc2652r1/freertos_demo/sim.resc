@@ -1,0 +1,36 @@
+# ti.cc2652r1.freertos_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI SimpleLink CC2652R1 - reuses the exact same
+# real ARM_CM4F kernel/port bundle as tm4c123/freertos_demo's own (both
+# chips are genuine Cortex-M4F cores - see this demo's own Makefile
+# comment). See
+# ../../../../../replica-server/renoly_examples/ti/cc2652r1/README.md.
+
+using sysbus
+mach create "CC2652R1_FreeRTOS_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo. A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes uartTask's marker/heartbeat bytes.
+# is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x40001000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIO DOUTTGL31_0 write watchpoint, firing only when the real LED bit
+# (DIO7, 0x80 - the green LED on the real CC26X2R1 LaunchPad) is set -
+# direct proof defaultTask's blink loop genuinely toggles the real
+# onboard LED pin via a real, running FreeRTOS task. Not a byte-tap ->
+# lands as a real, labeled [GPIO] Event.
+sysbus AddWatchpointHook 0x400220B0 4 Write "if value & 0x80: print('[GPIO] DIO7 toggle value=0x%X' % (value & 0x80))"
+
+# RF Core (BLE stub) CMDR write watchpoint, firing only for pointer-format
+# radio-op command submissions (real 2-LSB encoding, bit0 clear) - direct
+# proof bleTask genuinely drove the RF Core stub through its real
+# boot->CMD_RADIO_SETUP->CMD_BLE_ADV->CMD_BLE_SLAVE sequence. Not a
+# byte-tap -> lands as a real, labeled [BLE] Event.
+sysbus AddWatchpointHook 0x40041000 4 Write "if not (value & 1): print('[BLE] RF Core command submitted (pointer=0x%08X)' % value)"
+
+start

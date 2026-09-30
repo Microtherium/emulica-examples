@@ -1,0 +1,17 @@
+{
+  "target_id": "ti.lm3s6965",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "ti.lm3s6965",
+    "version": "reviewed-existing-v1",
+    "sha256": "19f4a4ac43aa33756cb6318d6fa8ef493dc79c2dfccae0c9e1650d792520b857",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "c7d65c26790575da292ef40bcd4cb53c168cb5b358e7d2b726e0b3e717c00e64",
+  "outputs": {
+    "platform.repl": "14906caf630b4786b0ee96eea7ce1731d3950b4561ecdde32c24866289bc395c",
+    "target.toml": "115ea16297511bc4dd03fe6b4176df5815a383d80c4cae2fdbb47198636f15e0"
+  }
+}

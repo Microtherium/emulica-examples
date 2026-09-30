@@ -1,0 +1,12 @@
+id = "nxp.k32w041.i2c_polling_transfer"
+target = "nxp.k32w041"
+default_config = "debug"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware/src/k32w041amdk6_i2c_polling_transfer/Debug"
+command = ["make", "all"]
+artifact = "firmware/src/k32w041amdk6_i2c_polling_transfer/Debug/k32w041amdk6_i2c_polling_transfer.axf"

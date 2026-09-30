@@ -1,0 +1,71 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "ti.lm3s6965.freertos_demo"
+target = "ti.lm3s6965"
+default_config = "debug"
+rtos = "freertos"
+comment = '''
+# Real FreeRTOS (CMSIS-RTOS v1), two tasks - the first Cortex-M3 FreeRTOS
+# demo under this plan (every other one is Cortex-M4/M4F). No vendor SDK/
+# generator applies to this chip (see target.toml) - firmware is
+# hand-written C against a real FreeRTOS V10.3.1 kernel with the real
+# ARM_CM3 port (fetched from FreeRTOS's own official repo - genuinely
+# different from ARM_CM4F's stack-frame shape, see README.md's own
+# write-up). See renoly_examples/ti/lm3s6965/README.md.
+'''
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "LM3S6965_FreeRTOS_Demo"
+backend = "renoly"
+header = '''
+# ti.lm3s6965.freertos_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI Stellaris LM3S6965EVB - first Cortex-M3
+# FreeRTOS target under this plan (every other FreeRTOS demo so far is
+# Cortex-M4/M4F). See ../../../../../replica-server/renoly_examples/ti/lm3s6965/README.md.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo (see uart_gpio_demo's own
+# sim.resc for the full incident writeup).
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# UART0 DR write watchpoint - observes uartTask's marker/heartbeat bytes.
+# is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x4000C000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIOF masked-DATA write watchpoint for pin 0 - real, register-level
+# proof defaultTask's blink loop genuinely toggles the pin. Not a
+# byte-tap -> lands as a real, labeled [GPIOF] Event.
+sysbus AddWatchpointHook 0x40025004 4 Write "print('[GPIOF] PF0 write value=0x%X' % (value & 0x1))"
+
+start
+'''

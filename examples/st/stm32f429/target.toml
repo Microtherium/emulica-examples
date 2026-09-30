@@ -1,0 +1,12 @@
+# GENERATED FILE - do not hand-edit.
+# Produced by tools/targetgen from target.spec.toml + pinned source.
+# Re-run `pixi run target-generate` after editing the spec.
+
+id = "st.stm32f429"
+vendor = "st"
+model = "stm32f429"
+part = "STM32F429ZITx"
+arch = "cortex-m4"
+platform = "platform.repl"
+cubemx_device = "STM32F429ZITx"
+support_stage = "initial"

@@ -1,0 +1,59 @@
+# ti.cc2640r2f.quadcopter_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI SimpleLink CC2640R2F - reuses the exact same
+# real ARM_CM3 kernel/port bundle as lm3s6965/freertos_demo's own (both
+# chips are genuine, FPU-less Cortex-M3 cores - see this demo's own
+# Makefile comment). See
+# ../../../../../replica-server/renoly_examples/ti/cc2640r2f/README.md.
+
+using sysbus
+mach create "CC2640R2F_Quadcopter_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo (see uart_gpio_demo's own
+# sim.resc for the full incident writeup). A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes uartTask's marker/heartbeat bytes.
+# is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x40001000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIO DOUTTGL31_0 write watchpoint, firing only when the real LED bit
+# (DIO7, 0x80) is set - direct proof defaultTask's blink loop genuinely
+# toggles the real onboard LED pin via a real, running FreeRTOS task, not
+# just that main() didn't fault. Not a byte-tap -> lands as a real,
+# labeled [GPIO] Event.
+sysbus AddWatchpointHook 0x400220B0 4 Write "if value & 0x80: print('[GPIO] DIO7 toggle value=0x%X' % (value & 0x80))"
+
+# RF Core (BLE stub) CMDR write watchpoint, firing only for pointer-format
+# radio-op command submissions (real 2-LSB encoding, bit0 clear - see
+# renoly/hw/ti/simplelink/rf_core.py's own docstring) - direct proof
+# bleTask genuinely drove the RF Core stub through its real
+# boot->CMD_RADIO_SETUP->CMD_BLE_ADV->CMD_BLE_SLAVE sequence, not just
+# that main() didn't fault. Not a byte-tap -> lands as a real, labeled
+# [BLE] Event. Real BLE radio hardware is a STUB here, not modeled - see
+# target.toml's own note.
+sysbus AddWatchpointHook 0x40041000 4 Write "if not (value & 1): print('[BLE] RF Core command submitted (pointer=0x%08X)' % value)"
+
+# PRCM GPTCLKGR write - fires once during quadcopter_pwm_init() to enable
+# GPT0-GPT3 clocks.  Not a byte-tap -> Timeline Event.
+sysbus AddWatchpointHook 0x40082054 4 Write "if value & 0xF: print('[QUAD] PRCM GPT clocks enabled mask=0x%X' % (value & 0xF))"
+
+# GPT CTL writes - fire when each timer's PWM output is armed (TAEN bit set)
+# during quadcopter_pwm_init().  Not byte-taps -> Timeline Events.
+sysbus AddWatchpointHook 0x4001000C 4 Write "if value & 1: print('[PWM0] GPT0 Timer A PWM armed (CTL=0x%X)' % value)"
+sysbus AddWatchpointHook 0x4001100C 4 Write "if value & 1: print('[PWM1] GPT1 Timer A PWM armed (CTL=0x%X)' % value)"
+sysbus AddWatchpointHook 0x4001200C 4 Write "if value & 1: print('[PWM2] GPT2 Timer A PWM armed (CTL=0x%X)' % value)"
+sysbus AddWatchpointHook 0x4001300C 4 Write "if value & 1: print('[PWM3] GPT3 Timer A PWM armed (CTL=0x%X)' % value)"
+
+# GPT TAMATCHR writes - fire every 10 ms PID loop iteration, one per motor.
+# match = 60000 - pulse_ticks, so pulse_ticks = 60000 - match.
+# Not byte-taps -> Timeline Events showing duty-cycle convergence.
+sysbus AddWatchpointHook 0x40010030 4 Write "if value: print('[PWM0] Motor FL match=0x%04X pulse=%d ticks' % (value & 0xFFFF, 60000 - (value & 0xFFFF)))"
+sysbus AddWatchpointHook 0x40011030 4 Write "if value: print('[PWM1] Motor FR match=0x%04X pulse=%d ticks' % (value & 0xFFFF, 60000 - (value & 0xFFFF)))"
+sysbus AddWatchpointHook 0x40012030 4 Write "if value: print('[PWM2] Motor RL match=0x%04X pulse=%d ticks' % (value & 0xFFFF, 60000 - (value & 0xFFFF)))"
+sysbus AddWatchpointHook 0x40013030 4 Write "if value: print('[PWM3] Motor RR match=0x%04X pulse=%d ticks' % (value & 0xFFFF, 60000 - (value & 0xFFFF)))"
+
+start

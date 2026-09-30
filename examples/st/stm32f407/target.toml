@@ -1,0 +1,10 @@
+# GENERATED FILE - do not hand-edit.
+# Produced by tools/targetgen from target.spec.toml + pinned source.
+# Re-run `pixi run target-generate` after editing the spec.
+
+id = "st.stm32f407"
+vendor = "st"
+model = "stm32f407"
+arch = "cortex-m4"
+platform = "platform.repl"
+support_stage = "initial"

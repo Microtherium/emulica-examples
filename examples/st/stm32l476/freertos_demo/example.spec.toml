@@ -1,0 +1,131 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32l476.freertos_demo"
+target = "st.stm32l476"
+default_config = "debug"
+rtos = "freertos"
+comment = '''
+# Real FreeRTOS (CMSIS_V1), two tasks - proves genuine task-switch
+# telemetry end to end, closing the "Timeline's RTOS pane has nothing to
+# show for this chip" gap uart_gpio_demo (bare-metal) can't. See
+# renoly_examples/st/stm32l476/README.md.
+'''
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "STM32L476_FreeRTOS_Demo"
+backend = "renoly"
+header = '''
+# st.stm32l476.freertos_demo
+# Real STM32CubeMX-generated (STM32L476RGTx, Makefile toolchain, CMSIS_V1
+# FreeRTOS) two-task demo - proves genuine FreeRTOS task-switch telemetry
+# end to end (RescParser's pxCurrentTCB/vTaskSwitchContext detection ->
+# UnicornCore.on_task_switch -> session.py -> Timeline's RTOS pane), not
+# just that a bare-metal loop runs. Also carries uart_gpio_demo's full
+# bare-metal peripheral set (ADC1/DAC1/DMA/I2C1/SPI2), exercised once in
+# main() before osKernelStart() - see README.md's "FreeRTOS demo gets
+# uart_gpio_demo's peripherals too" section for why there, not in a task.
+# See ../../../../../replica-server/renoly_examples/st/stm32l476/README.md.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware first so symbols resolve for patching. Bare @$ORIGIN/
+# firmware.elf, not the Makefile build output path directly - see
+# uart_gpio_demo/sim.resc's own doc comment on this exact same fix (this
+# demo copied the same now-corrected mistake): server/bundle.py's
+# materialize_bundle only literal-string-replaces "$ORIGIN/firmware.elf",
+# so anything else silently fails to load over the real client->server
+# path (StartSession/RunSimulation) even though it resolves fine over a
+# direct RescParser.parse() (pytest/CLI tooling) - which is exactly why
+# this demo's Timeline stayed empty in the real extension despite the
+# task-switch/interrupt-entry wiring being genuinely correct. A synced
+# flat firmware.elf copy lives at this demo's own root (sibling to this
+# file) - see README.md and the pytest/CLI tooling's auto-sync step.
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Same established HAL_InitTick patch as uart_gpio_demo's own sim.resc:
+# the emulator's MachineTimer drives SysTick delivery itself, independent
+# of the real peripheral's HAL-configured reload value.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# HAL_Delay patch, defensive - this demo's own tasks use osDelay() (FreeRTOS's
+# tick count, not HAL_GetTick()), but the newly-added ADC1/DAC1/I2C1/SPI2 HAL
+# code (transplanted from uart_gpio_demo, which DOES call HAL_Delay from its
+# own main loop) may or may not pull a real HAL_Delay reference into this
+# build depending on what the linker keeps - patching it if present costs
+# nothing; RescParser logs a harmless, noisy-but-safe error instead of a
+# silent no-op if it turns out unreferenced here.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+# USART2_TDR write watchpoint - observes uartTask's marker/heartbeat bytes
+# as they're transmitted (real, timing-independent proof it actually ran,
+# not poked - same idiom as uart_gpio_demo's own USART2 watchpoint).
+sysbus AddWatchpointHook 0x40004428 4 Write "print(chr(value & 0xFF), end='')"
+
+# Peripheral watchpoints below use the same "[Tag] Description" convention
+# every other example project's sim.resc already uses (CAN_demo_2's own
+# I2C1/SPI1 hooks, pwm_demo's SPI5/TIM hooks, etc.) - server/session.py's
+# WatchpointHook.label/description pulls the tag straight out of a
+# bracketed prefix in the print text, and is_byte_tap (see its own
+# _BYTE_TAP_MARKERS) decides whether the hook lands as a Timeline Event
+# or a Bus Traffic frame. This untags a real gap the earlier version of
+# this file had: the I2C1 hook printed a bare, unbracketed string - still
+# a genuine Event (is_byte_tap is false for it), but labeled with the raw
+# address/"register write" instead of reading as I2C1 at a glance - and
+# ADC1/DAC1/SPI2 had no watchpoints at all, so their only visible trace
+# was the UART marker bytes on the Bus Traffic pane, not a distinct
+# signal of their own.
+
+# I2C1 CR2 (0x40005404) write watchpoint, firing only when the real
+# I2C_GENERATE_START() macro's START bit (bit13=0x2000) is set. Not a
+# byte-tap -> lands as an [I2C1] Event.
+sysbus AddWatchpointHook 0x40005404 4 Write "if value & 0x2000: print('[I2C1] CR2 START condition')"
+
+# ADC1 CR (0x50040008) write watchpoint, firing only when the real
+# LL_ADC_REG_StartConversion() bit (ADSTART, bit2=0x4) is set - direct
+# proof HAL_ADC_Start() genuinely issued a start, not just configured one.
+# Not a byte-tap -> lands as an [ADC1] Event.
+sysbus AddWatchpointHook 0x50040008 4 Write "if value & 0x4: print('[ADC1] CR ADSTART set - regular conversion started')"
+
+# DAC1 DHR12R1 (0x40007408) write watchpoint - the real 12-bit right-
+# aligned code HAL_DAC_SetValue() writes. %03X (3 hex digits, a 12-bit
+# value) deliberately avoids is_byte_tap's %02X/X2/%x markers (those are
+# for single-byte UART/SPI/I2C taps) -> lands as a [DAC1] Event, not a
+# byte-stream bus frame.
+sysbus AddWatchpointHook 0x40007408 4 Write "print('[DAC1] DHR12R1=0x%03X' % (value & 0xFFF))"
+
+# SPI2 DR (0x4000380C) write watchpoint - same real idiom as every SPI-
+# touching example in this repo (CAN_demo_2's [SPI1 TX], pwm_demo's
+# [SPI5 TX]): the exact byte HAL_SPI_TransmitReceive() clocks out. IS a
+# byte-tap (%02X matches is_byte_tap's own markers, by design - SPI is a
+# byte-stream peripheral like UART) -> lands as Bus Traffic on an "SPI2
+# TX" bus lane, not a Timeline Event, matching every other SPI example.
+sysbus AddWatchpointHook 0x4000380C 1 Write "print('[SPI2 TX] DR=0x%02X' % (value & 0xFF))"
+
+start
+'''

@@ -1,0 +1,21 @@
+# CAN_RTOS_Demo – firmware-only simulation
+#
+# Minimal Renoly script for running the firmware without the top-level sensor
+# model.  Used by the firmware/example.toml "sim" configuration.
+
+using sysbus
+mach create "CAN_RTOS_Demo"
+machine LoadPlatformDescription @../platform.repl
+
+# Load firmware staged by project_runner.py.
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# Stub BSP routines that would stall desktop simulation.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+# CAN1 TX mailbox 0 watchpoint – prints ID + TXRQ on every TIR write.
+sysbus AddWatchpointHook 0x40006580 4 Write "frame_id = (value >> 21) & 0x7FF; txrq = value & 1; print('[CAN TX] ID=0x' + frame_id.ToString('X3') + ' TXRQ=' + str(txrq))"
+
+start

@@ -1,0 +1,24 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x40000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x10000
+
+timer_a0: Timers.MSP432TimerA @ sysbus 0x40000000
+
+eusci_a0: UART.MSP432EUSCIAUart @ sysbus 0x40001000
+
+eusci_b0: SPI.MSP432EUSCIB @ sysbus 0x40002000
+
+eusci_b1: SPI.MSP432EUSCIB @ sysbus 0x40002400
+
+dio: GPIO.MSP432DIO @ sysbus 0x40004C00
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    prio_bits: 3
+
+systick: Tims.SysTick @ sysbus 0xE000E010

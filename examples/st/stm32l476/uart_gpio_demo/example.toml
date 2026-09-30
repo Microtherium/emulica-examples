@@ -1,0 +1,16 @@
+id = "st.stm32l476.uart_gpio_demo"
+target = "st.stm32l476"
+default_config = "debug"
+# Bare-metal, not FreeRTOS - the "initial" bar (boots and runs its one
+# demo), not the later full RTOS-demo commitment. See renoly_examples/st/
+# stm32l476/README.md.
+rtos = "none"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

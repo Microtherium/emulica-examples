@@ -1,0 +1,3 @@
+# ESP example placeholder.
+# This project is executed through Espressif QEMU via `idf.py qemu monitor`.
+# The Emulica SaaS server path is not used for this target.

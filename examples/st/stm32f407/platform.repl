@@ -1,0 +1,61 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash_alias: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x100000
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x100000
+
+ccmram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x10000
+
+ram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x20000
+
+sram_bitband: Misc.BitBandPeripheral @ sysbus 0x22000000
+    base_address: 0x20000000
+
+spi3: SPI.STM32F4_SPI @ sysbus 0x40003C00
+
+uart2: UART.STM32_UART @ sysbus 0x40004400
+
+i2c1: I2C.STM32F4_I2C @ sysbus 0x40005400
+
+can1: CAN.STM32F4_CAN @ sysbus 0x40006400
+
+pwr: PWR.STM32_PWR @ sysbus 0x40007000
+
+adc1: ADC.STM32F4_ADC @ sysbus 0x40012000
+
+spi1: SPI.STM32F4_SPI @ sysbus 0x40013000
+
+gpioa: GPIO.STM32F4_GPIO @ sysbus 0x40020000
+
+gpiob: GPIO.STM32F4_GPIO @ sysbus 0x40020400
+
+gpioc: GPIO.STM32F4_GPIO @ sysbus 0x40020800
+
+gpiod: GPIO.STM32F4_GPIO @ sysbus 0x40020C00
+
+gpioe: GPIO.STM32F4_GPIO @ sysbus 0x40021000
+
+gpiof: GPIO.STM32F4_GPIO @ sysbus 0x40021400
+
+gpiog: GPIO.STM32F4_GPIO @ sysbus 0x40021800
+
+gpioh: GPIO.STM32F4_GPIO @ sysbus 0x40021C00
+
+rcc: RCC.STM32F4_RCC @ sysbus 0x40023800
+
+flash_controller: Memory.STM32_Flash @ sysbus 0x40023C00
+
+bitband: Misc.BitBandPeripheral @ sysbus 0x42000000
+    base_address: 0x40000000
+
+usb_otg: USB.USB_Stub @ sysbus 0x50000000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+
+systick: Tims.SysTick @ sysbus 0xE000E010

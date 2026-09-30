@@ -1,0 +1,12 @@
+id = "st.stm32f429.CAN_demo_2"
+target = "st.stm32f429"
+default_config = "debug"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

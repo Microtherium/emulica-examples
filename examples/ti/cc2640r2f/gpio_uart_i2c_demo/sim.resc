@@ -1,0 +1,42 @@
+# ti.cc2640r2f.gpio_uart_i2c_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) bare-metal
+# GPIO + UART0 + I2C0 demo for TI SimpleLink CC2640R2F, the third TI chip
+# under this plan, first SimpleLink-family one. See
+# ../../../../../replica-server/renoly_examples/ti/cc2640r2f/README.md.
+
+using sysbus
+mach create "CC2640R2F_GPIO_UART_I2C_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf, not a path reflecting the local build-output
+# layout - REQUIRED, not stylistic. server/bundle.py's materialize_bundle
+# only literal-string-replaces exactly that bare form when staging an
+# uploaded bundle for the real client -> StartSession/RunSimulation path;
+# anything else resolves fine for local direct-parse testing but silently
+# fails to load over the real deployed path. A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes the boot marker as it's transmitted
+# (real, timing-independent proof it actually ran). "[Tag] Description"
+# convention (see server/session.py's WatchpointHook.label/description) -
+# is_byte_tap (chr(value) matches) routes this to Bus Traffic, matching
+# every other UART-touching example in this repo, not Events.
+sysbus AddWatchpointHook 0x40001000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIO DOUTTGL31_0 write watchpoint, firing only when the real LED bit
+# (DIO7, 0x80) is set - direct proof the blink loop genuinely toggles the
+# real onboard LED pin, not just that main() didn't fault. This register
+# covers all 32 DIOs at one fixed address (the real, genuinely different
+# unified-GPIO design - see gpio.py's own docstring), unlike Stellaris/
+# Tiva's per-port masked-DATA range. Not a byte-tap -> lands as a real,
+# labeled [GPIO] Event.
+sysbus AddWatchpointHook 0x400220B0 4 Write "if value & 0x80: print('[GPIO] DIO7 toggle value=0x%X' % (value & 0x80))"
+
+# I2C0 MCTRL (0x40002804) write watchpoint, firing only when the real
+# RUN|START bits (0x1|0x2=0x3) are set - direct proof the I2C0 bus-scan
+# loop genuinely issued a START, not just that main() didn't hang. Not a
+# byte-tap -> lands as an [I2C0] Event.
+sysbus AddWatchpointHook 0x40002804 4 Write "if value & 0x3: print('[I2C0] MCTRL START condition')"
+
+start

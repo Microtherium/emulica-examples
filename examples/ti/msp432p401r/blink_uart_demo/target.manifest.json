@@ -1,0 +1,17 @@
+{
+  "target_id": "ti.msp432p401r",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "ti.msp432p401r",
+    "version": "reviewed-existing-v1",
+    "sha256": "e76cbc21ca33531ed0712b5ccf069a13cefea307d3a45aae65bf26cee8ff7344",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "fcb4ed42e64a2711b8ae5382da014940d7a11dce15bd6244f41084a73e307e79",
+  "outputs": {
+    "platform.repl": "6d07ae6b45a26e7f06ff09a245a367a914ffd6430e95b877e3c0544528966d72",
+    "target.toml": "42ff4c221ec629e806a45ba4c59dc2908cbb3b87bda0f5c143a10b1aa021c16a"
+  }
+}

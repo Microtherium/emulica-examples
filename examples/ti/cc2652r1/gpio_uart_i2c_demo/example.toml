@@ -1,0 +1,20 @@
+id = "ti.cc2652r1.gpio_uart_i2c_demo"
+target = "ti.cc2652r1"
+default_config = "debug"
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real SimpleLink GPIO/UART/I2C/PRCM/IOC
+# register set, identical to CC2640R2F's own (see README.md). Real
+# 802.15.4/BLE radio hardware beyond the register-level stub is
+# deliberately untouched.
+rtos = "none"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

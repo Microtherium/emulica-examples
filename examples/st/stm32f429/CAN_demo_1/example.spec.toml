@@ -1,0 +1,78 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32f429.CAN_demo_1"
+target = "st.stm32f429"
+default_config = "debug"
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { workdir = "firmware/Debug", command = ["make", "all"], artifact = "firmware/Debug/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "STM32F429_Fresh"
+backend = "renoly"
+header = '''
+# STM32F429_Fresh
+# Freshly generated from STM32CubeMX - no peripheral-specific behavior added yet.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware first so symbols resolve for patching
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Patch HAL_Delay to return immediately so the firmware runs at full speed
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+# The emulator MachineTimer drives SysTick/FreeRTOS; skip CubeMX TIM6 HAL timebase setup.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# Return stable clocks from HAL helpers; exact PLL math is not modeled.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1) + 4))"
+
+# CAN1 Watchpoints (bxCAN TX mailbox request / RX FIFO0 release - see
+# StartCanTxTask/StartCanRxTask in main.c). Same taps as CAN_demo/sim.resc -
+# without these, CAN activity is only visible via Register History polling,
+# not the Events timeline, since LiveSession only emits a Timeline event for
+# addresses this project's own sim.resc declares via AddWatchpointHook.
+# CAN1_TI0R = 0x40006580 (base 0x40006400 + mailbox0 TIR offset 0x180): bit0 = TXRQ.
+# HAL_CAN_AddTxMessage loads mailbox 0's data/id registers then sets TXRQ to transmit.
+sysbus AddWatchpointHook 0x40006580 4 Write "if (value & 0x1): print('[CAN1] TX mailbox0 TXRQ set - frame queued for transmission')"
+# CAN1_RF0R = 0x4000640C (base 0x40006400 + RF0R offset 0x0C): bit5 = RFOM0.
+# HAL_CAN_GetRxMessage sets this after draining a frame to release the FIFO0 output slot.
+sysbus AddWatchpointHook 0x4000640C 4 Write "if (value & 0x20): print('[CAN1] RF0R RFOM0 set - FIFO0 output mailbox released after RX drain')"
+
+# Add more `sysbus AddWatchpointHook <addr> <width> Write "..."` lines here for
+# whatever other peripheral(s) this project ends up driving, and patch out any
+# additional middleware init functions (e.g. MX_USB_HOST_Init/Process) the
+# same way as above if the .ioc enables something this template doesn't.
+
+start
+'''

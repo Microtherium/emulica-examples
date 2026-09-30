@@ -1,0 +1,84 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "ti.msp432p401r.blink_uart_demo"
+target = "ti.msp432p401r"
+default_config = "debug"
+rtos = "none"
+comment = '''
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real DIO/eUSCI_A register set. See
+# renoly_examples/ti/msp432p401r/README.md.
+'''
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "MSP432P401R_Blink_UART_Demo"
+backend = "renoly"
+header = '''
+# ti.msp432p401r.blink_uart_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) bare-metal
+# P1.0 + EUSCI_A0 demo for TI MSP432P401R, the fifth TI chip under this
+# plan. See ../../../../../replica-server/renoly_examples/ti/msp432p401r/README.md.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Bare @$ORIGIN/firmware.elf, not a path reflecting the local build-output
+# layout - REQUIRED, not stylistic. server/bundle.py's materialize_bundle
+# only literal-string-replaces exactly that bare form when staging an
+# uploaded bundle for the real client -> StartSession/RunSimulation path;
+# anything else resolves fine for local direct-parse testing but silently
+# fails to load over the real deployed path - see
+# renoly_examples/st/stm32l476/README.md's own real incident with this
+# exact mistake, avoided here from the start. A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# EUSCI_A0 TXBUF write watchpoint - observes the boot marker as it's
+# transmitted (real, timing-independent proof it actually ran). "[Tag]
+# Description" convention (see server/session.py's
+# WatchpointHook.label/description) - is_byte_tap (chr(value) matches)
+# routes this to Bus Traffic, matching every other UART-touching example
+# in this repo, not Events. The numeric width field (4) is parsed but not
+# enforced by this engine's own watchpoint dispatch (fires on any write
+# to this exact address, regardless of the real access width the CPU
+# used) - kept at 4 to match every other example's own convention, not
+# because this register is actually 32-bit (it's real 16-bit eUSCI_A -
+# see hw/ti/msp432/eusci.py's own docstring).
+sysbus AddWatchpointHook 0x4000100E 4 Write "print(chr(value & 0xFF), end='')"
+
+# DIO Port A OUT-register write watchpoint, masked to the real P1.0 bit -
+# register-level proof the blink loop genuinely toggles the pin, not just
+# that main() didn't fault. Not a byte-tap -> lands as a real, labeled
+# [DIO] Event.
+sysbus AddWatchpointHook 0x40004C02 4 Write "print('[DIO] P1.0 write value=0x%X' % (value & 0x1))"
+
+start
+'''

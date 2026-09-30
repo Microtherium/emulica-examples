@@ -1,0 +1,17 @@
+{
+  "target_id": "st.stm32l476",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "st.stm32l476",
+    "version": "reviewed-existing-v1",
+    "sha256": "b64192d01905ac07a8a5274444513bfc6b8bec8b92be1633b40de385e04d56ef",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "b17f5c09afe725f8845095777255a93aa647fb92361ab74db560bd4798e61166",
+  "outputs": {
+    "platform.repl": "6a3d1b9f67f9be8f91f83c8de0171d3281ed9693526827ebcd16fbfd37c44099",
+    "target.toml": "c7120529508d466d03b52577bf3d433539980fc25f6e1ce2913f281ffeeb4d41"
+  }
+}

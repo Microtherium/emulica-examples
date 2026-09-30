@@ -1,0 +1,4 @@
+config load "C:\Users\alire\AppData\Local\Temp\emulica-demo-gen-P2R28h\firmware\firmware.ioc"
+project path "C:\Users\alire\AppData\Local\Temp\emulica-demo-gen-P2R28h"
+project generate
+exit

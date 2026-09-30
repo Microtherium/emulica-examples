@@ -1,0 +1,27 @@
+# ti.tm4c123.freertos_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI Tiva C TM4C123GH6PM - this chip's genuine
+# Cortex-M4F core, unlike LM3S6965's Cortex-M3, so the real ARM_CM4F
+# FreeRTOS port applies here (already proven by stm32l476/freertos_demo's
+# own real, working use of it). See
+# ../../../../../replica-server/renoly_examples/ti/tm4c123/README.md.
+
+using sysbus
+mach create "TM4C123_FreeRTOS_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo (see blink_uart_demo's own
+# sim.resc for the full incident writeup).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes uartTask's marker/heartbeat bytes.
+# is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x4000C000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIOF masked-DATA write watchpoint for pin 1 - real, register-level
+# proof defaultTask's blink loop genuinely toggles PF1. Not a
+# byte-tap -> lands as a real, labeled [GPIOF] Event.
+sysbus AddWatchpointHook 0x40025008 4 Write "print('[GPIOF] PF1 write value=0x%X' % (value & 0x2))"
+
+start

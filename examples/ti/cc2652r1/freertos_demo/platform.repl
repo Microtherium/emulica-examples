@@ -1,0 +1,26 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x58000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x14000
+
+uart0: UART.SimpleLinkUART @ sysbus 0x40001000
+
+i2c0: I2C.SimpleLinkI2C @ sysbus 0x40002000
+
+gpio: GPIO.SimpleLinkGPIO @ sysbus 0x40022000
+
+rfc: Misc.SimpleLinkRFCore @ sysbus 0x40040000
+
+ioc: Misc.SimpleLinkIOC @ sysbus 0x40081000
+
+prcm: Misc.SimpleLinkPRCM @ sysbus 0x40082000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    prio_bits: 3
+
+systick: Tims.SysTick @ sysbus 0xE000E010

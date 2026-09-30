@@ -1,0 +1,20 @@
+id = "ti.lm3s6965.freertos_demo"
+target = "ti.lm3s6965"
+default_config = "debug"
+# Real FreeRTOS (CMSIS-RTOS v1), two tasks - the first Cortex-M3 FreeRTOS
+# demo under this plan (every other one is Cortex-M4/M4F). No vendor SDK/
+# generator applies to this chip (see target.toml) - firmware is
+# hand-written C against a real FreeRTOS V10.3.1 kernel with the real
+# ARM_CM3 port (fetched from FreeRTOS's own official repo - genuinely
+# different from ARM_CM4F's stack-frame shape, see README.md's own
+# write-up). See renoly_examples/ti/lm3s6965/README.md.
+rtos = "freertos"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

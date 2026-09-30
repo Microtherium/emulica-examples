@@ -1,0 +1,59 @@
+# ti.tm4c123.blink_uart_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) bare-metal
+# GPIOF + UART0 demo for TI Tiva C TM4C123GH6PM, the second TI chip under
+# this plan. See ../../../../../replica-server/renoly_examples/ti/tm4c123/README.md.
+
+using sysbus
+mach create "TM4C123_Blink_UART_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf, not a path reflecting the local build-output
+# layout - REQUIRED, not stylistic. server/bundle.py's materialize_bundle
+# only literal-string-replaces exactly that bare form when staging an
+# uploaded bundle for the real client -> StartSession/RunSimulation path;
+# anything else resolves fine for local direct-parse testing but silently
+# fails to load over the real deployed path, faulting the CPU at boot with
+# a completely empty Timeline and no error anywhere obvious - see
+# renoly_examples/st/stm32l476/README.md's own real incident with this
+# exact mistake, avoided here from the start. A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes the boot marker as it's transmitted
+# (real, timing-independent proof it actually ran). "[Tag] Description"
+# convention (see server/session.py's WatchpointHook.label/description) -
+# is_byte_tap (chr(value) matches) routes this to Bus Traffic, matching
+# every other UART/SPI-touching example in this repo, not Events.
+sysbus AddWatchpointHook 0x4000C000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIOF masked-DATA write watchpoint for pin 1 (mask=0x02, address offset
+# = mask << 2 = 0x008) - real, register-level proof the blink loop
+# genuinely toggles the pin, not just that main() didn't fault. Not a
+# byte-tap -> lands as a real, labeled [GPIOF] Event.
+sysbus AddWatchpointHook 0x40025008 4 Write "print('[GPIOF] PF1 write value=0x%X' % (value & 0x2))"
+
+# I2C0 MCS (0x40020004) write watchpoint, firing only when the real
+# RUN|START bits (0x1|0x2=0x3) are set - direct proof the I2C0 bus-scan
+# loop genuinely issued a START, not just that main() didn't hang. Not a
+# byte-tap -> lands as an [I2C0] Event.
+sysbus AddWatchpointHook 0x40020004 4 Write "if value & 0x3: print('[I2C0] MCS START condition')"
+
+# ADC0 PSSI (0x40038028) write watchpoint, firing only when the real SS0
+# bit (0x1) is set - direct proof adc0_read_temp() genuinely initiated a
+# real sequencer-0 conversion. Not a byte-tap -> lands as an [ADC0] Event.
+sysbus AddWatchpointHook 0x40038028 4 Write "if value & 0x1: print('[ADC0] PSSI SS0 initiated')"
+
+# SSI0 DR (0x40008008) write watchpoint - same real idiom as every SPI-
+# touching example in this repo. IS a byte-tap (%02X matches is_byte_tap's
+# own markers, by design - SSI/SPI is a byte-stream peripheral like UART)
+# -> lands as Bus Traffic on an "SSI0 TX" bus lane, not a Timeline Event.
+sysbus AddWatchpointHook 0x40008008 4 Write "print('[SSI0 TX] DR=0x%02X' % (value & 0xFF))"
+
+# Same address, a second, independent watchpoint (SystemBus/session.py's
+# WatchpointHook both support several hooks per address - real, not a
+# workaround) using hex() instead of %02X so it deliberately misses every
+# is_byte_tap marker -> a real, labeled [SSI0] *Event* alongside the Bus
+# Traffic byte above, matching LM3S6965's own convention.
+sysbus AddWatchpointHook 0x40008008 4 Write "print('[SSI0] TX byte=' + hex(value & 0xFF))"
+
+start

@@ -1,0 +1,18 @@
+id = "ti.lm3s6965.uart_gpio_demo"
+target = "ti.lm3s6965"
+default_config = "debug"
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real PL061/PL011/SysCtl register set. See
+# renoly_examples/ti/lm3s6965/README.md.
+rtos = "none"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

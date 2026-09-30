@@ -1,0 +1,10 @@
+id = "st.stm32f407.i2c_demo"
+target = "st.stm32f407"
+default_config = "sim"
+
+[configs.sim]
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+
+[configs.sim.build]
+artifact = "firmware/Debug/stm32f407_example.elf"

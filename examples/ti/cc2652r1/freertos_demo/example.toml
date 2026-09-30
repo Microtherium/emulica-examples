@@ -1,0 +1,22 @@
+id = "ti.cc2652r1.freertos_demo"
+target = "ti.cc2652r1"
+default_config = "debug"
+# Real FreeRTOS (CMSIS-RTOS v1), three tasks (defaultTask blinks the real
+# green LED via GPIO's own unified DOUTTGL31_0 register, uartTask
+# transmits a marker + periodic heartbeat over UART0, bleTask drives the
+# RF Core stub - real client-PC BLE bridge included, same as CC2640R2F's
+# own). No vendor SDK/generator applies to this chip (see target.toml) -
+# firmware is hand-written C against a real FreeRTOS V10.3.1 kernel,
+# reusing the exact same ARM_CM4F port TM4C123's own freertos_demo
+# already fetched (both chips are genuine Cortex-M4F cores). See
+# renoly_examples/ti/cc2652r1/README.md.
+rtos = "freertos"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

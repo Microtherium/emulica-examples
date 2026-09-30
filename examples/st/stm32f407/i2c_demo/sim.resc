@@ -1,0 +1,25 @@
+# I2C_Demo
+
+using sysbus
+mach create "I2C_Demo"
+machine LoadPlatformDescription @../platform.repl
+
+# Add a compatible I2C temperature sensor that Renoly natively supports.
+machine LoadPlatformDescriptionFromString "temperature_sensor: Sensors.BMP180 @ i2c1 0x25"
+
+# Load firmware staged by project_runner.py.
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# Patch common board-support routines that can block desktop simulation.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+sysbus LogPeripheralAccess i2c1 false
+logLevel 3 sysbus
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x100): print('[I2C Status] START')"
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x200): print('[I2C Status] STOP')"
+sysbus AddWatchpointHook 0x40005410 4 Write "print('[I2C Byte] 0x' + (value & 0xFF).ToString('X2'))"
+logLevel -1 i2c1
+
+start

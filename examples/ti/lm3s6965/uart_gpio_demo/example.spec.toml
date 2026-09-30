@@ -1,0 +1,104 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "ti.lm3s6965.uart_gpio_demo"
+target = "ti.lm3s6965"
+default_config = "debug"
+rtos = "none"
+comment = '''
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real PL061/PL011/SysCtl register set. See
+# renoly_examples/ti/lm3s6965/README.md.
+'''
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "LM3S6965_UART_GPIO_Demo"
+backend = "renoly"
+header = '''
+# ti.lm3s6965.uart_gpio_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) bare-metal
+# GPIO + UART0 demo for TI Stellaris LM3S6965EVB, the first TI chip under
+# this plan. See ../../../../../replica-server/renoly_examples/ti/lm3s6965/README.md.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Bare @$ORIGIN/firmware.elf, not a path reflecting the local build-output
+# layout - REQUIRED, not stylistic. server/bundle.py's materialize_bundle
+# only literal-string-replaces exactly that bare form when staging an
+# uploaded bundle for the real client -> StartSession/RunSimulation path;
+# anything else resolves fine for local direct-parse testing but silently
+# fails to load over the real deployed path, faulting the CPU at boot with
+# a completely empty Timeline and no error anywhere obvious - see
+# renoly_examples/st/stm32l476/README.md's own real incident with this
+# exact mistake, avoided here from the start. A synced flat firmware.elf
+# copy lives at this demo's own root (sibling to this file).
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# UART0 DR write watchpoint - observes the boot marker as it's transmitted
+# (real, timing-independent proof it actually ran). "[Tag] Description"
+# convention (see server/session.py's WatchpointHook.label/description) -
+# is_byte_tap (chr(value) matches) routes this to Bus Traffic, matching
+# every other UART/SPI-touching example in this repo, not Events.
+sysbus AddWatchpointHook 0x4000C000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIOF masked-DATA write watchpoint for pin 0 (mask=0x01, address offset
+# = mask << 2 = 0x004) - real, register-level proof the blink loop
+# genuinely toggles the pin, not just that main() didn't fault. Not a
+# byte-tap -> lands as a real, labeled [GPIOF] Event.
+sysbus AddWatchpointHook 0x40025004 4 Write "print('[GPIOF] PF0 write value=0x%X' % (value & 0x1))"
+
+# I2C0 MCS (0x40020004) write watchpoint, firing only when the real
+# RUN|START bits (0x1|0x2=0x3) are set - direct proof the I2C0 bus-scan
+# loop genuinely issued a START, not just that main() didn't hang. Not a
+# byte-tap -> lands as an [I2C0] Event.
+sysbus AddWatchpointHook 0x40020004 4 Write "if value & 0x3: print('[I2C0] MCS START condition')"
+
+# ADC0 PSSI (0x40038028) write watchpoint, firing only when the real SS0
+# bit (0x1) is set - direct proof adc0_read_temp() genuinely initiated a
+# real sequencer-0 conversion. Not a byte-tap -> lands as an [ADC0] Event.
+sysbus AddWatchpointHook 0x40038028 4 Write "if value & 0x1: print('[ADC0] PSSI SS0 initiated')"
+
+# SSI0 DR (0x40008008) write watchpoint - same real idiom as every SPI-
+# touching example in this repo. IS a byte-tap (%02X matches is_byte_tap's
+# own markers, by design - SSI/SPI is a byte-stream peripheral like UART)
+# -> lands as Bus Traffic on an "SSI0 TX" bus lane, not a Timeline Event.
+sysbus AddWatchpointHook 0x40008008 4 Write "print('[SSI0 TX] DR=0x%02X' % (value & 0xFF))"
+
+# Same address, a second, independent watchpoint (SystemBus/session.py's
+# WatchpointHook both support several hooks per address - real, not a
+# workaround) using hex() instead of %02X so it deliberately misses every
+# is_byte_tap marker -> a real, labeled [SSI0] *Event* alongside the Bus
+# Traffic byte above, on request (not this repo's own prior default of
+# routing every SPI-shaped peripheral to Bus Traffic only).
+sysbus AddWatchpointHook 0x40008008 4 Write "print('[SSI0] TX byte=' + hex(value & 0xFF))"
+
+start
+'''

@@ -1,0 +1,36 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x40000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x8000
+
+gpioa: GPIO.TivaGPIO @ sysbus 0x40004000
+
+gpiob: GPIO.TivaGPIO @ sysbus 0x40005000
+
+gpioc: GPIO.TivaGPIO @ sysbus 0x40006000
+
+gpiod: GPIO.TivaGPIO @ sysbus 0x40007000
+
+ssi0: SPI.TivaSSI @ sysbus 0x40008000
+
+uart0: UART.TivaUART @ sysbus 0x4000C000
+
+i2c0: I2C.TivaI2C @ sysbus 0x40020000
+
+gpioe: GPIO.TivaGPIO @ sysbus 0x40024000
+
+gpiof: GPIO.TivaGPIO @ sysbus 0x40025000
+
+adc0: Analog.TivaADC @ sysbus 0x40038000
+
+sysctl: Misc.TivaSysCtl @ sysbus 0x400FE000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    prio_bits: 3
+
+systick: Tims.SysTick @ sysbus 0xE000E010

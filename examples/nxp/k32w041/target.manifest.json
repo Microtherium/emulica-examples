@@ -1,0 +1,17 @@
+{
+  "target_id": "nxp.k32w041",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "nxp.k32w041",
+    "version": "reviewed-existing-v1",
+    "sha256": "a4eff986f0545929970b4500d0ae479fe67162e572f5c2edd3803118fc18e526",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "e4feddf6034fc8decfda2286f82522484f37fb4003c69d8789d4961db658568c",
+  "outputs": {
+    "platform.repl": "efbabc882fafa63ef7f59f0a6ae89555f3e6bf973bae218877ee444348bc0b0a",
+    "target.toml": "7c6310c6c7e4d75cf3cc1ee3c1e7b0eb2475a8d682e4b197796053fc09ded159"
+  }
+}

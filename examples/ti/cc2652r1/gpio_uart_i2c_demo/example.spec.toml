@@ -1,0 +1,79 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "ti.cc2652r1.gpio_uart_i2c_demo"
+target = "ti.cc2652r1"
+default_config = "debug"
+rtos = "none"
+comment = '''
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real SimpleLink GPIO/UART/I2C/PRCM/IOC
+# register set, identical to CC2640R2F's own (see README.md). Real
+# 802.15.4/BLE radio hardware beyond the register-level stub is
+# deliberately untouched.
+'''
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "CC2652R1_GPIO_UART_I2C_Demo"
+backend = "renoly"
+header = '''
+# ti.cc2652r1.gpio_uart_i2c_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) bare-metal
+# GPIO + UART0 + I2C0 demo for TI SimpleLink CC2652R1, the fourth TI chip
+# under this plan, second SimpleLink-family one. See
+# ../../../../../replica-server/renoly_examples/ti/cc2652r1/README.md.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Bare @$ORIGIN/firmware.elf, not a path reflecting the local build-output
+# layout - REQUIRED, not stylistic - see uart_gpio_demo's own sim.resc for
+# the full incident writeup. A synced flat firmware.elf copy lives at this
+# demo's own root (sibling to this file).
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# UART0 DR write watchpoint - observes the boot marker as it's transmitted
+# (real, timing-independent proof it actually ran). is_byte_tap -> Bus
+# Traffic, matching every other UART-touching example in this repo.
+sysbus AddWatchpointHook 0x40001000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIO DOUTTGL31_0 write watchpoint, firing only when the real LED bit
+# (DIO7, 0x80 - the green LED on the real CC26X2R1 LaunchPad) is set -
+# direct proof the blink loop genuinely toggles the real onboard LED pin.
+# Not a byte-tap -> lands as a real, labeled [GPIO] Event.
+sysbus AddWatchpointHook 0x400220B0 4 Write "if value & 0x80: print('[GPIO] DIO7 toggle value=0x%X' % (value & 0x80))"
+
+# I2C0 MCTRL (0x40002804) write watchpoint, firing only when the real
+# RUN|START bits (0x1|0x2=0x3) are set - direct proof the I2C0 bus-scan
+# loop genuinely issued a START. Not a byte-tap -> lands as an [I2C0] Event.
+sysbus AddWatchpointHook 0x40002804 4 Write "if value & 0x3: print('[I2C0] MCTRL START condition')"
+
+start
+'''

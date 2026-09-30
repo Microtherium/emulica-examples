@@ -1,0 +1,21 @@
+id = "ti.cc2640r2f.freertos_demo"
+target = "ti.cc2640r2f"
+default_config = "debug"
+# Real FreeRTOS (CMSIS-RTOS v1), two tasks (defaultTask blinks the real
+# onboard LED via GPIO's own unified DOUTTGL31_0 register, uartTask
+# transmits a marker + periodic heartbeat over UART0). No vendor SDK/
+# generator applies to this chip (see target.toml) - firmware is
+# hand-written C against a real FreeRTOS V10.3.1 kernel, reusing the exact
+# same ARM_CM3 port lm3s6965/freertos_demo's own already fetched (both
+# chips are genuine, FPU-less Cortex-M3 cores - see README.md's own
+# write-up). See renoly_examples/ti/cc2640r2f/README.md.
+rtos = "freertos"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

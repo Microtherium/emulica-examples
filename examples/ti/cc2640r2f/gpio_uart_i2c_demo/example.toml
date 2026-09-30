@@ -1,0 +1,19 @@
+id = "ti.cc2640r2f.gpio_uart_i2c_demo"
+target = "ti.cc2640r2f"
+default_config = "debug"
+# Bare-metal, no RTOS - the "initial" bar (boots and runs its one demo),
+# not the later full server-ready commitment. No vendor SDK/generator
+# applies to this chip (see target.toml) - firmware is hand-written
+# bare-metal C against the real, genuinely different unified-GPIO/IOC/
+# PRCM SimpleLink architecture (see README.md). Real BLE radio hardware
+# is deliberately untouched.
+rtos = "none"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

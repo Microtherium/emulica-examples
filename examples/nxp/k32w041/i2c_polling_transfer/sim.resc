@@ -1,0 +1,30 @@
+# K32W041 I2C Polling Transfer Demo
+# Demonstrates emulation of the K32W041 using Python peripheral stubs
+
+using sysbus
+mach create "K32W041_I2C_Demo"
+
+# Load platform description
+machine LoadPlatformDescription @../platform.repl
+
+# Load firmware (renamed to firmware.elf to work with main.py MVP client logic)
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# FLEXCOMM0 (UART0) is at 0x4008B000. FIFOWR is at offset 0xE20.
+# We add a write hook to print out UART debug characters to the log!
+sysbus AddWatchpointHook 0x4008BE20 4 Write "print(chr(value & 0xFF), end='')"
+
+# FLEXCOMM2 (I2C0 Master) is at 0x40003000.
+# I2C uses MSTDAT/MSTCTL, not the USART/SPI FIFOWR register.
+sysbus AddWatchpointHook 0x40003028 4 Write "print('[I2C0 Master MSTDAT] ' + (value & 0xFF).ToString('X2'))"
+sysbus AddWatchpointHook 0x40003020 4 Write "print('[I2C0 Master MSTCTL] ' + (value & 0xFF).ToString('X2'))"
+# Keep a non-byte hook for Timeline Events as well. This bare-metal demo has
+# no RTOS task switches, so byte-only hooks otherwise leave the main Timeline
+# looking idle even while Bus Traffic is being produced.
+sysbus AddWatchpointHook 0x40003020 4 Write "print('[I2C Transfer] master command')"
+
+# FLEXCOMM3 (I2C1 Slave) is at 0x40004000.
+sysbus AddWatchpointHook 0x40004044 4 Read "print('[I2C1 Slave SLVDAT] read')"
+sysbus AddWatchpointHook 0x40004044 4 Write "print('[I2C1 Slave SLVDAT] ' + (value & 0xFF).ToString('X2'))"
+
+start

@@ -1,0 +1,89 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32f429.display_demo"
+target = "st.stm32f429"
+default_config = "debug"
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { workdir = "firmware/Debug", command = ["make", "all"], artifact = "firmware/Debug/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "STM32F429_Display_Demo"
+backend = "renoly"
+header = '''
+# STM32F429 Display Demo
+# Demonstrates a real LTDC/DMA2D/LVGL display path - an analog clock (lv_meter
+# with hour/min/sec needles) rendered into the emulated SDRAM framebuffer.
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "../platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware first so symbols resolve for patching
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# LTDC/DMA2D are now modeled (see platform.repl: ltdc/dma2d/sdram), so their
+# CubeMX init functions are allowed to run. FMC/SDRAM controller registers are
+# NOT modeled - only the SDRAM address range is backed by memory - so
+# MX_FMC_Init is still patched to return immediately.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_FMC_Init') & ~1))"
+
+# Patch USB HOST initialization to return immediately
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+
+# Patch HAL_Delay to return immediately so the demo loop runs at full speed
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+# The emulator MachineTimer drives SysTick/FreeRTOS; skip CubeMX TIM6 HAL timebase setup.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# Return stable clocks from HAL helpers; the demo does not depend on exact PLL math.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1) + 4))"
+
+# CLEAN HARDWARE TRACING CONFIGURATION
+# 1. Silence register-level log noise
+sysbus LogPeripheralAccess tim1 false
+sysbus LogPeripheralAccess tim2 false
+logLevel 3 sysbus
+
+# 2. Misc watchpoints
+# SPI5_DR = 0x4001500C: observe DefaultTask SPI transmit bytes
+sysbus AddWatchpointHook 0x4001500C 1 Write "print('[SPI5 TX] DR=0x%02X' % (value & 0xFF))"
+
+# 3. Display Watchpoints (LTDC/DMA2D)
+# LTDC_GCR = 0x40016818: bit0 = LTDCEN (display controller enable)
+sysbus AddWatchpointHook 0x40016818 4 Write "if (value & 0x1): print('[LTDC] GCR LTDCEN set - display controller enabled')"
+# DMA2D_CR = 0x4002B000: bit0 = START (transfer trigger). The DMA2D model performs
+# the configured fill/copy into the sdram framebuffer synchronously on this write.
+sysbus AddWatchpointHook 0x4002B000 4 Write "if (value & 0x1): print('[DMA2D] CR_START fired - display fill/copy triggered')"
+
+start
+'''

@@ -1,0 +1,71 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "nxp.k32w041.i2c_polling_transfer"
+target = "nxp.k32w041"
+default_config = "debug"
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { workdir = "firmware/src/k32w041amdk6_i2c_polling_transfer/Debug", command = ["make", "all"], artifact = "firmware/src/k32w041amdk6_i2c_polling_transfer/Debug/k32w041amdk6_i2c_polling_transfer.axf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "K32W041_I2C_Demo"
+backend = "renoly"
+header = '''
+# K32W041 I2C Polling Transfer Demo
+# Demonstrates emulation of the K32W041 using Python peripheral stubs
+
+'''
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load platform description
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "../platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware (renamed to firmware.elf to work with main.py MVP client logic)
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# FLEXCOMM0 (UART0) is at 0x4008B000. FIFOWR is at offset 0xE20.
+# We add a write hook to print out UART debug characters to the log!
+sysbus AddWatchpointHook 0x4008BE20 4 Write "print(chr(value & 0xFF), end='')"
+
+# FLEXCOMM2 (I2C0 Master) is at 0x40003000.
+# I2C uses MSTDAT/MSTCTL, not the USART/SPI FIFOWR register.
+sysbus AddWatchpointHook 0x40003028 4 Write "print('[I2C0 Master MSTDAT] ' + (value & 0xFF).ToString('X2'))"
+sysbus AddWatchpointHook 0x40003020 4 Write "print('[I2C0 Master MSTCTL] ' + (value & 0xFF).ToString('X2'))"
+# Keep a non-byte hook for Timeline Events as well. This bare-metal demo has
+# no RTOS task switches, so byte-only hooks otherwise leave the main Timeline
+# looking idle even while Bus Traffic is being produced.
+sysbus AddWatchpointHook 0x40003020 4 Write "print('[I2C Transfer] master command')"
+
+# FLEXCOMM3 (I2C1 Slave) is at 0x40004000.
+sysbus AddWatchpointHook 0x40004044 4 Read "print('[I2C1 Slave SLVDAT] read')"
+sysbus AddWatchpointHook 0x40004044 4 Write "print('[I2C1 Slave SLVDAT] ' + (value & 0xFF).ToString('X2'))"
+
+start
+'''

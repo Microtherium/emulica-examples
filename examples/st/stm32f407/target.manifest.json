@@ -1,0 +1,17 @@
+{
+  "target_id": "st.stm32f407",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "st.stm32f407",
+    "version": "reviewed-existing-v1",
+    "sha256": "ec0d2736d3d0a08d4a44d7a89411bb5fcaa7463774a4bd1490e9945eb76b295e",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "22e9f358963353f6edbb40083429c1acf8a6a86557a935d1cbe4c58853153231",
+  "outputs": {
+    "platform.repl": "9bd86de37d1f3f01f0237e736648fe5b07905091ade0cac743e0655a4d29e9c0",
+    "target.toml": "66cdf7d0552e12d9a2a242464c21f5a29698e7f24860accc3a2aefadc61c75a3"
+  }
+}

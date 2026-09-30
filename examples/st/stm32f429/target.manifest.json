@@ -1,0 +1,17 @@
+{
+  "target_id": "st.stm32f429",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "cmsis-svd",
+    "device_name": "STM32F429",
+    "version": "STM32F4xx_DFP v3.1.1",
+    "sha256": "185ddfe09ebec697628850d3c262092c477924ff618d29cf3a2d6e453b44336b",
+    "url": "https://github.com/Open-CMSIS-Pack/STM32F4xx_DFP/blob/v3.1.1/CMSIS/SVD/STM32F429.svd",
+    "license": "Apache-2.0 (per SPDX header in the file itself: Copyright (c) 2024 STMicroelectronics)"
+  },
+  "spec_sha256": "f08c04f58d2b4fbc8a0a1b1b0210d0cbe99f5118c727113cb034eb3ff4b6c2e4",
+  "outputs": {
+    "platform.repl": "62bcf715446ceedaea5068334d74c2629755922bf088a03e56fc631276e5e63d",
+    "target.toml": "9c14444a47dd9d8ebe49deab748b40dce9d26c37777bf64221b29fef2ec933bb"
+  }
+}

@@ -1,0 +1,80 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32f429.CAN_demo_2"
+target = "st.stm32f429"
+default_config = "debug"
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { workdir = "firmware", command = ["make", "all"], artifact = "firmware/build/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "STM32F429_Fresh"
+backend = "renoly"
+header = '''
+# STM32F429_Fresh - CAN / SPI / I2C RTOS demo
+# See firmware/Src/freertos.c: CANTask (bxCAN loopback), SPITask (SPI1
+# master TX), I2CTask (I2C1 master TX), DefaultTask (heartbeat).
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware first so symbols resolve for patching
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Patch HAL_Delay to return immediately so the firmware runs at full speed
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+# The emulator MachineTimer drives SysTick/FreeRTOS; skip CubeMX TIM6 HAL timebase setup.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# Return stable clocks from HAL helpers; exact PLL math is not modeled.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1) + 4))"
+
+# CAN1 watchpoints (bxCAN loopback TX/RX - see StartCANTask in freertos.c).
+# CAN1 base = 0x40006400.
+# TX Mailbox 0 TIR (identifier + TXRQ) : base + 0x180 = 0x40006580. bit0 = TXRQ.
+sysbus AddWatchpointHook 0x40006580 4 Write "if (value & 0x1): print('[CAN1] TX mailbox0 TXRQ set - frame queued for transmission')"
+# RF0R (RX FIFO0 status/release)       : base + 0x0C  = 0x4000640C. bit5 = RFOM0.
+# HAL_CAN_GetRxMessage() sets this after draining a frame in loopback mode.
+sysbus AddWatchpointHook 0x4000640C 4 Write "if (value & 0x20): print('[CAN1] RF0R RFOM0 set - FIFO0 output mailbox released after RX drain')"
+
+# SPI1 watchpoint (master TX - see StartSPITask in freertos.c).
+# SPI1 base = 0x40013000; DR (data register) = base + 0x0C = 0x4001300C.
+sysbus AddWatchpointHook 0x4001300C 1 Write "print('[SPI1 TX] DR=0x%02X' % (value & 0xFF))"
+
+# I2C1 watchpoints (master TX - see StartI2CTask in freertos.c).
+# I2C1 base = 0x40005400; CR1 = base + 0x00, DR = base + 0x10 = 0x40005410.
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x100): print('[I2C1] START condition')"
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x200): print('[I2C1] STOP condition')"
+sysbus AddWatchpointHook 0x40005410 1 Write "print('[I2C1 TX] DR=0x%02X' % (value & 0xFF))"
+
+start
+'''

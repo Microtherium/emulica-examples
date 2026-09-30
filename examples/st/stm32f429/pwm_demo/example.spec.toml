@@ -1,0 +1,89 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32f429.pwm_demo"
+target = "st.stm32f429"
+default_config = "debug"
+
+[[config]]
+name = "debug"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { workdir = "firmware/Debug", command = ["make", "all"], artifact = "firmware/Debug/firmware.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "STM32F429_PWM_Demo"
+backend = "renoly"
+header = '''
+# STM32F429 PWM Demo
+# Demonstrates PWM signal generation with timer period and duty cycle tracing
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "../platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Load firmware first so symbols resolve for patching
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# This firmware has no LTDC/DMA2D/FMC/LVGL display path at all (see
+# st/stm32f429/display_demo for that) - nothing to patch or watch there.
+
+# Patch USB HOST initialization to return immediately
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+
+# Patch HAL_Delay to return immediately so the demo loop runs at full speed
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+# The emulator MachineTimer drives SysTick/FreeRTOS; skip CubeMX TIM6 HAL timebase setup.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# Return stable clocks from HAL helpers; the demo does not depend on exact PLL math.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1) + 4))"
+
+# CLEAN HARDWARE TRACING CONFIGURATION
+# 1. Silence register-level log noise
+sysbus LogPeripheralAccess tim1 false
+sysbus LogPeripheralAccess tim2 false
+logLevel 3 sysbus
+
+# 2. Misc watchpoints
+# SPI5_DR = 0x4001500C: observe DefaultTask SPI transmit bytes
+sysbus AddWatchpointHook 0x4001500C 1 Write "print('[SPI5 TX] DR=0x%02X' % (value & 0xFF))"
+
+# 3. TIM2 General-Purpose Timer PWM Watchpoints
+# The firmware only drives PWM on TIM2_CH1 (PA5) - TIM1 is initialized as a
+# plain base timer (no PWM channel configured) and TIM3 isn't used at all,
+# so this is the only timer whose CR1/ARR/CCR1 writes are ever observable.
+# TIM2_CR1 = 0x40000000: detect counter enable (CEN bit 0)
+sysbus AddWatchpointHook 0x40000000 4 Write "if (value & 0x1): print('[PWM TIM2] Timer STARTED (CR1=0x' + value.ToString('X') + ')')"
+# TIM2_ARR = 0x4000002C: auto-reload register controls PWM period/resolution
+sysbus AddWatchpointHook 0x4000002C 4 Write "print('[PWM TIM2] Period ARR=0x' + value.ToString('X') + ' (' + value.ToString() + ' ticks)')"
+# TIM2_CCR1 = 0x40000034: channel 1 (PA5) duty cycle
+sysbus AddWatchpointHook 0x40000034 4 Write "print('[PWM TIM2] CH1 Duty CCR1=0x' + value.ToString('X') + ' (' + value.ToString() + ')')"
+
+start
+'''

@@ -1,0 +1,17 @@
+{
+  "target_id": "ti.cc2640r2f",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "ti.cc2640r2f",
+    "version": "reviewed-existing-v1",
+    "sha256": "9fa72a13e50256b3edab321805d13f74ee7717d46e8fc88afea596ec9a17d65a",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "694fd0881ac093cc62d03a409ec8579ae5cd374da18f482f7e5ad0acb165ea2d",
+  "outputs": {
+    "platform.repl": "b893fcd230ed0ba0722ca83b7bb87df9bba3ae11600d2ab60e8e3c53249e14f2",
+    "target.toml": "d3d8de23c053d6c47bbb7b6a346e0b6f1d7af6df57e6a536edc29e58dcc73837"
+  }
+}

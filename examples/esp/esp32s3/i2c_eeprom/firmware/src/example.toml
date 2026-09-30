@@ -1,0 +1,49 @@
+id = "esp.esp32s3.i2c_eeprom"
+target = "esp.esp32s3"
+default_config = "prebuilt"
+
+[configs.prebuilt]
+resc = "sim.resc"
+firmware = "build/i2c_eeprom.elf"
+
+[configs.prebuilt.artifacts]
+app_bin = "build/i2c_eeprom.bin"
+bootloader_bin = "build/bootloader/bootloader.bin"
+partition_table_bin = "build/partition_table/partition-table.bin"
+
+[configs.prebuilt.build]
+backend = "idf"
+workdir = "."
+artifact = "build/i2c_eeprom.elf"
+
+[configs.prebuilt.simulate]
+backend = "custom-isa"
+engine = "xtensa-qemu-engine"
+target = "esp32"
+trace = "i2c"
+timeout = 8.0
+max_messages = 2
+rebuild_before_run = true
+
+[configs.source]
+resc = "sim.resc"
+firmware = "build/i2c_eeprom.elf"
+
+[configs.source.artifacts]
+app_bin = "build/i2c_eeprom.bin"
+bootloader_bin = "build/bootloader/bootloader.bin"
+partition_table_bin = "build/partition_table/partition-table.bin"
+
+[configs.source.build]
+backend = "idf"
+workdir = "."
+artifact = "build/i2c_eeprom.elf"
+args = ["build"]
+
+[configs.source.simulate]
+backend = "custom-isa"
+engine = "xtensa-qemu-engine"
+target = "esp32"
+trace = "i2c"
+timeout = 8.0
+max_messages = 2

@@ -1,0 +1,62 @@
+# STM32F429 CAN + Display Demo
+# Two independent peripheral paths in one firmware image: a real LTDC/DMA2D/
+# LVGL display path (an analog clock rendered into the emulated SDRAM
+# framebuffer) and a real bxCAN TX/RX path (see can_task.c) - see README.md.
+
+using sysbus
+mach create "STM32F429_CAN_Demo"
+machine LoadPlatformDescription @../platform.repl
+
+# Load firmware first so symbols resolve for patching
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# LTDC/DMA2D are now modeled (see platform.repl: ltdc/dma2d/sdram), so their
+# CubeMX init functions are allowed to run. FMC/SDRAM controller registers are
+# NOT modeled - only the SDRAM address range is backed by memory - so
+# MX_FMC_Init is still patched to return immediately.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_FMC_Init') & ~1))"
+
+# Patch USB HOST initialization to return immediately
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+
+# Patch HAL_Delay to return immediately so the demo loop runs at full speed
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+# The emulator MachineTimer drives SysTick/FreeRTOS; skip CubeMX TIM6 HAL timebase setup.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47702000' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_InitTick') & ~1))"
+# Return stable clocks from HAL helpers; the demo does not depend on exact PLL math.
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetSysClockFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetHCLKFreq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK1Freq') & ~1) + 4))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x47704800' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1))"
+python "monitor.Parse('sysbus WriteDoubleWord 0x%X 0x00F42400' % ((monitor.Machine.SystemBus.GetSymbolAddress('HAL_RCC_GetPCLK2Freq') & ~1) + 4))"
+
+# CLEAN HARDWARE TRACING CONFIGURATION
+# 1. Silence register-level log noise
+sysbus LogPeripheralAccess tim1 false
+sysbus LogPeripheralAccess tim2 false
+logLevel 3 sysbus
+
+# 2. Misc watchpoints
+# SPI5_DR = 0x4001500C: observe DefaultTask SPI transmit bytes
+sysbus AddWatchpointHook 0x4001500C 1 Write "print('[SPI5 TX] DR=0x%02X' % (value & 0xFF))"
+
+# 3. Display Watchpoints (LTDC/DMA2D)
+# LTDC_GCR = 0x40016818: bit0 = LTDCEN (display controller enable)
+sysbus AddWatchpointHook 0x40016818 4 Write "if (value & 0x1): print('[LTDC] GCR LTDCEN set - display controller enabled')"
+# DMA2D_CR = 0x4002B000: bit0 = START (transfer trigger). The DMA2D model performs
+# the configured fill/copy into the sdram framebuffer synchronously on this write.
+sysbus AddWatchpointHook 0x4002B000 4 Write "if (value & 0x1): print('[DMA2D] CR_START fired - display fill/copy triggered')"
+
+# 4. CAN1 Watchpoints (bxCAN TX mailbox request / RX FIFO0 release - see can_task.c)
+# CAN1_TI0R = 0x40006580 (base 0x40006400 + mailbox0 TIR offset 0x180): bit0 = TXRQ.
+# StartCANTxTask loads mailbox 0's data/id registers then sets TXRQ to transmit.
+sysbus AddWatchpointHook 0x40006580 4 Write "if (value & 0x1): print('[CAN1] TX mailbox0 TXRQ set - frame queued for transmission')"
+# CAN1_RF0R = 0x4000640C (base 0x40006400 + RF0R offset 0x0C): bit5 = RFOM0.
+# StartCANRxTask sets this after draining a frame to release the FIFO0 output slot.
+sysbus AddWatchpointHook 0x4000640C 4 Write "if (value & 0x20): print('[CAN1] RF0R RFOM0 set - FIFO0 output mailbox released after RX drain')"
+
+start

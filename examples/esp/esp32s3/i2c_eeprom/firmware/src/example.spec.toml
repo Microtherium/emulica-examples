@@ -1,0 +1,34 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "esp.esp32s3.i2c_eeprom"
+target = "esp.esp32s3"
+default_config = "prebuilt"
+
+[[config]]
+name = "prebuilt"
+resc = "sim.resc"
+firmware = "build/i2c_eeprom.elf"
+build = { backend = "idf", workdir = ".", artifact = "build/i2c_eeprom.elf" }
+artifacts = { app_bin = "build/i2c_eeprom.bin", bootloader_bin = "build/bootloader/bootloader.bin", partition_table_bin = "build/partition_table/partition-table.bin" }
+simulate = { backend = "custom-isa", engine = "xtensa-qemu-engine", target = "esp32", trace = "i2c", timeout = 8, max_messages = 2, rebuild_before_run = true }
+
+[[config]]
+name = "source"
+resc = "sim.resc"
+firmware = "build/i2c_eeprom.elf"
+build = { backend = "idf", workdir = ".", artifact = "build/i2c_eeprom.elf", args = ["build"] }
+artifacts = { app_bin = "build/i2c_eeprom.bin", bootloader_bin = "build/bootloader/bootloader.bin", partition_table_bin = "build/partition_table/partition-table.bin" }
+simulate = { backend = "custom-isa", engine = "xtensa-qemu-engine", target = "esp32", trace = "i2c", timeout = 8, max_messages = 2 }
+
+[[resc]]
+filename = "sim.resc"
+backend = "none"
+placeholder_lines = [
+  "# ESP example placeholder.",
+  "# This project is executed through Espressif QEMU via `idf.py qemu monitor`.",
+  "# The Emulica SaaS server path is not used for this target.",
+]

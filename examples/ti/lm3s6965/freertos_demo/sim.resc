@@ -1,0 +1,25 @@
+# ti.lm3s6965.freertos_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI Stellaris LM3S6965EVB - first Cortex-M3
+# FreeRTOS target under this plan (every other FreeRTOS demo so far is
+# Cortex-M4/M4F). See ../../../../../replica-server/renoly_examples/ti/lm3s6965/README.md.
+
+using sysbus
+mach create "LM3S6965_FreeRTOS_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo (see uart_gpio_demo's own
+# sim.resc for the full incident writeup).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# UART0 DR write watchpoint - observes uartTask's marker/heartbeat bytes.
+# is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x4000C000 4 Write "print(chr(value & 0xFF), end='')"
+
+# GPIOF masked-DATA write watchpoint for pin 0 - real, register-level
+# proof defaultTask's blink loop genuinely toggles the pin. Not a
+# byte-tap -> lands as a real, labeled [GPIOF] Event.
+sysbus AddWatchpointHook 0x40025004 4 Write "print('[GPIOF] PF0 write value=0x%X' % (value & 0x1))"
+
+start

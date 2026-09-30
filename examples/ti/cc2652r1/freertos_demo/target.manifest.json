@@ -1,0 +1,17 @@
+{
+  "target_id": "ti.cc2652r1",
+  "generator_version": "targetgen/0.1.0",
+  "source": {
+    "kind": "explicit-manifest",
+    "device_name": "ti.cc2652r1",
+    "version": "reviewed-existing-v1",
+    "sha256": "38e6d619f5379b9ad3950864eb101ac6543df9a22966a71aee78ec6fe13e6d2c",
+    "url": "repository-local-reviewed-platform",
+    "license": "Project source; facts retained from reviewed platform.repl"
+  },
+  "spec_sha256": "ee338803b0b117831276884292c3015c7fecb4b430017d698681ae6ad2ad52fc",
+  "outputs": {
+    "platform.repl": "195f59bc001290e06df2cab7c1c0a5115c933a69e4e62c9dd4d6cffda905029e",
+    "target.toml": "dbd26fb1ddac0bbcf478c2a83dc17a48b93020f7b1767dbff9c5b2e67055f1be"
+  }
+}

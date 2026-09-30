@@ -1,0 +1,20 @@
+id = "ti.msp432p401r.freertos_demo"
+target = "ti.msp432p401r"
+default_config = "debug"
+# Real FreeRTOS (CMSIS-RTOS v1), two tasks - this chip's genuine
+# Cortex-M4F core, so the real ARM_CM4F port applies, reused verbatim
+# from tm4c123/freertos_demo's own already-proven bundle - no new
+# port-fetch/frame-shape work needed. No vendor SDK/generator applies to
+# this chip (see target.toml) - firmware is hand-written C against a
+# real FreeRTOS V10.3.1 kernel. See
+# renoly_examples/ti/msp432p401r/README.md.
+rtos = "freertos"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"

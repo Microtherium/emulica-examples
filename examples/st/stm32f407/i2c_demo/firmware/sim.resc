@@ -1,0 +1,15 @@
+# Firmware
+
+using sysbus
+mach create "Firmware"
+machine LoadPlatformDescription @../platform.repl
+
+# Load firmware staged by project_runner.py.
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# Patch common board-support routines that can block desktop simulation.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+start

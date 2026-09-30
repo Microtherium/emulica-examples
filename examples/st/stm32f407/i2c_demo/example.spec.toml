@@ -1,0 +1,61 @@
+# Canonical source for the generated example.toml + sim.resc in this
+# directory (plans/DETERMINISTIC_TARGET_GENERATION_PLAN.md). Migrated
+# mechanically from the previously hand-authored files by
+# scripts/migrate-example-specs.mjs - RESC content other than the
+# platform/ELF loads is preserved verbatim, never inferred.
+schema_version = 1
+id = "st.stm32f407.i2c_demo"
+target = "st.stm32f407"
+default_config = "sim"
+
+[[config]]
+name = "sim"
+resc = "sim.resc"
+firmware = "firmware/firmware.elf"
+build = { artifact = "firmware/Debug/stm32f407_example.elf" }
+
+[[resc]]
+filename = "sim.resc"
+machine_name = "I2C_Demo"
+backend = "renoly"
+header = '''
+# I2C_Demo
+
+'''
+
+  [[resc.operations]]
+  kind = "load_platform"
+  path = "../platform.repl"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Add a compatible I2C temperature sensor that Renoly natively supports.
+machine LoadPlatformDescriptionFromString "temperature_sensor: Sensors.BMP180 @ i2c1 0x25"
+
+# Load firmware staged by project_runner.py.
+'''
+
+  [[resc.operations]]
+  kind = "load_elf"
+  path = "$ORIGIN/firmware.elf"
+
+  [[resc.operations]]
+  kind = "literal"
+  text = '''
+
+# Patch common board-support routines that can block desktop simulation.
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+sysbus LogPeripheralAccess i2c1 false
+logLevel 3 sysbus
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x100): print('[I2C Status] START')"
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x200): print('[I2C Status] STOP')"
+sysbus AddWatchpointHook 0x40005410 4 Write "print('[I2C Byte] 0x' + (value & 0xFF).ToString('X2'))"
+logLevel -1 i2c1
+
+start
+'''

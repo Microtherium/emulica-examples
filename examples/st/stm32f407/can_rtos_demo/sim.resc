@@ -1,0 +1,56 @@
+# CAN_RTOS_Demo
+#
+# Renoly simulation script for the CAN-based cooperative RTOS demo running on
+# an STM32F407VG (Discovery board).
+#
+# What runs:
+#   - MiniRTOS cooperative scheduler (can_rtos.c) with six tasks:
+#       USB_HOST (0 ms), CAN_Rx (10 ms), CAN_Tx (100 ms),
+#       I2C_Demo (1000 ms), ADC_Demo (1000 ms), SPI_Demo (1000 ms)
+#   - CAN1 TX mailbox writes are observed via watchpoints
+#   - I2C traffic to the BMP180 sensor is observed via watchpoints
+
+using sysbus
+mach create "CAN_RTOS_Demo"
+machine LoadPlatformDescription @../platform.repl
+
+# Attach a simulated BMP180 I2C temperature sensor (I2C address 0x25).
+machine LoadPlatformDescriptionFromString "temperature_sensor: Sensors.BMP180 @ i2c1 0x25"
+
+# Load firmware staged by project_runner.py.
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# ---------------------------------------------------------------------------
+# Stub BSP routines that would stall desktop simulation.
+# 0x4770 = BX LR (Thumb "return immediately").
+# ---------------------------------------------------------------------------
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Init') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('MX_USB_HOST_Process') & ~1))"
+python "monitor.Parse('sysbus WriteWord 0x%X 0x4770' % (monitor.Machine.SystemBus.GetSymbolAddress('HAL_Delay') & ~1))"
+
+# ---------------------------------------------------------------------------
+# I2C1 watchpoints (kept from original demo)
+# ---------------------------------------------------------------------------
+sysbus LogPeripheralAccess i2c1 false
+logLevel 3 sysbus
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x100): print('[I2C] START condition')"
+sysbus AddWatchpointHook 0x40005400 4 Write "if (value & 0x200): print('[I2C] STOP condition')"
+sysbus AddWatchpointHook 0x40005410 4 Write "print('[I2C Byte] 0x' + (value & 0xFF).ToString('X2'))"
+logLevel -1 i2c1
+
+# ---------------------------------------------------------------------------
+# CAN1 watchpoints
+#
+# Register addresses (CAN1 base = 0x40006400):
+#   TX Mailbox 0 TIR  (identifier + TXRQ) : 0x40006400 + 0x180 = 0x40006580
+#   TX Mailbox 0 TDLR (data bytes 0-3)    : 0x40006400 + 0x188 = 0x40006588
+#   TX Mailbox 0 TDHR (data bytes 4-7)    : 0x40006400 + 0x18C = 0x4000658C
+#   TX Mailbox 0 TDTR (DLC)               : 0x40006400 + 0x184 = 0x40006584
+#
+# TIR layout: bits[31:21] = STID (11-bit standard ID), bit[0] = TXRQ
+# ---------------------------------------------------------------------------
+sysbus AddWatchpointHook 0x40006580 4 Write "frame_id = (value >> 21) & 0x7FF; txrq = value & 1; print('[CAN TX] ID=0x' + frame_id.ToString('X3') + ' TXRQ=' + str(txrq))"
+sysbus AddWatchpointHook 0x40006584 4 Write "print('[CAN TX] DLC=' + str(value & 0xF))"
+sysbus AddWatchpointHook 0x40006588 4 Write "b0 = value & 0xFF; b1 = (value>>8)&0xFF; b2 = (value>>16)&0xFF; b3 = (value>>24)&0xFF; print('[CAN TX Data] B0=' + chr(b0) + ' B1=' + chr(b1) + ' B2=' + chr(b2) + ' B3=0x' + b3.ToString('X2'))"
+
+start

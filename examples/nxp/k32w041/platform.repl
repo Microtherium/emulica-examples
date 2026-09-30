@@ -1,0 +1,56 @@
+// GENERATED FILE - do not hand-edit.
+// Produced by tools/targetgen from target.spec.toml + pinned source.
+// Re-run `pixi run target-generate` after editing the spec.
+
+flash: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0xA0000
+
+sram: Memory.MappedMemory @ sysbus 0x04000000
+    size: 0x15FE0
+
+sram1: Memory.MappedMemory @ sysbus 0x04020000
+    size: 0x10000
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4"
+    nvic: nvic
+
+syscon: nxp.k32w041.SYSCON @ sysbus 0x40000000
+    size: 0x1000
+
+flexcomm2: nxp.k32w041.FLEXCOMM @ sysbus 0x40003000
+    size: 0x1000
+
+flexcomm3: nxp.k32w041.FLEXCOMM @ sysbus 0x40004000
+    size: 0x1000
+
+flexcomm6: nxp.k32w041.FLEXCOMM @ sysbus 0x40005000
+    size: 0x1000
+
+iocon: nxp.k32w041.IOCON @ sysbus 0x4000F000
+    size: 0x1000
+
+pmc: nxp.k32w041.PMC @ sysbus 0x40012000
+    size: 0x1000
+
+async_syscon: nxp.k32w041.ASYNC_SYSCON @ sysbus 0x40020000
+    size: 0x1000
+
+gpio: nxp.k32w041.GPIO @ sysbus 0x40080000
+    size: 0x4000
+
+flexcomm0: nxp.k32w041.FLEXCOMM @ sysbus 0x4008B000
+    size: 0x1000
+
+flexcomm1: nxp.k32w041.FLEXCOMM @ sysbus 0x4008C000
+    size: 0x1000
+
+flexcomm4: nxp.k32w041.FLEXCOMM @ sysbus 0x4008D000
+    size: 0x1000
+
+flexcomm5: nxp.k32w041.FLEXCOMM @ sysbus 0x4008E000
+    size: 0x1000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    IRQPriorities: 16
+    systick: cpu

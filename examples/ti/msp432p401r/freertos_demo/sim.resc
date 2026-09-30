@@ -1,0 +1,43 @@
+# ti.msp432p401r.freertos_demo
+# Real, hand-written (no vendor SDK/generator - see target.toml) FreeRTOS
+# (CMSIS-RTOS v1) demo for TI MSP432P401R - this chip's genuine Cortex-M4F
+# core, so the real ARM_CM4F FreeRTOS port applies, reused verbatim from
+# tm4c123/freertos_demo's own already-proven bundle. See
+# ../../../../../replica-server/renoly_examples/ti/msp432p401r/README.md.
+
+using sysbus
+mach create "MSP432P401R_FreeRTOS_Demo"
+machine LoadPlatformDescription @platform.repl
+
+# Bare @$ORIGIN/firmware.elf - REQUIRED, not stylistic, same real reason
+# as every other demo's sim.resc in this repo (see blink_uart_demo's own
+# sim.resc for the full incident writeup).
+sysbus LoadELF @$ORIGIN/firmware.elf
+
+# EUSCI_A0 TXBUF write watchpoint - observes uartTask's marker/heartbeat
+# bytes. is_byte_tap -> Bus Traffic, matching every other UART example.
+sysbus AddWatchpointHook 0x4000100E 4 Write "print(chr(value & 0xFF), end='')"
+
+# DIO Port A OUT-register write watchpoint, masked to the real P1.0 bit -
+# register-level proof defaultTask's blink loop genuinely toggles the
+# pin. Not a byte-tap -> lands as a real, labeled [DIO] Event.
+sysbus AddWatchpointHook 0x40004C02 4 Write "print('[DIO] P1.0 write value=0x%X' % (value & 0x1))"
+
+# EUSCI_B0 TXBUF write watchpoint - real, register-level proof spiTask
+# genuinely drives the SPI self-loopback (no fixed onboard SPI device on
+# this board - see eusci_b.py's own docstring). Not a byte-tap -> Event.
+sysbus AddWatchpointHook 0x4000200E 4 Write "print('[SPI] TX byte=0x%X' % (value & 0xFF))"
+
+# EUSCI_B1 CTLW0 write watchpoint, firing only when the real UCTXSTT bit
+# (0x2) is set - direct proof i2cTask genuinely issued a START condition,
+# not just that main() didn't hang.
+sysbus AddWatchpointHook 0x40002400 4 Write "if value & 0x2: print('[I2C1] UCTXSTT START condition')"
+
+# TIMER_A0 CCR1 write watchpoint - real, register-level proof pwmTask
+# genuinely sweeps the real PWM duty-cycle register over time (this
+# emulator has no live counter/waveform simulation - see timer_a.py's
+# own docstring; the concrete proof is this register's own changing
+# value, not a simulated analog signal).
+sysbus AddWatchpointHook 0x40000014 4 Write "print('[PWM] TA0CCR1 duty=%d' % value)"
+
+start

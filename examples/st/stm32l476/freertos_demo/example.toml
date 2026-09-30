@@ -1,0 +1,17 @@
+id = "st.stm32l476.freertos_demo"
+target = "st.stm32l476"
+default_config = "debug"
+# Real FreeRTOS (CMSIS_V1), two tasks - proves genuine task-switch
+# telemetry end to end, closing the "Timeline's RTOS pane has nothing to
+# show for this chip" gap uart_gpio_demo (bare-metal) can't. See
+# renoly_examples/st/stm32l476/README.md.
+rtos = "freertos"
+
+[configs.debug]
+resc = "sim.resc"
+firmware = "firmware/build/firmware.elf"
+
+[configs.debug.build]
+workdir = "firmware"
+command = ["make", "all"]
+artifact = "firmware/build/firmware.elf"
